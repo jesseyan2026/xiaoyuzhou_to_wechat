@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>预览编辑 - 播客转文章</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .preview-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 24px;
+        }
+
+        .editor-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .editor-header {
+            background: #fff;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .editor-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .editor-toolbar {
+            display: flex;
+            gap: 8px;
+        }
+
+        .toolbar-btn {
+            padding: 6px 12px;
+            border: 1px solid #dee2e6;
+            background: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .toolbar-btn:hover {
+            background: #e9ecef;
+        }
+
+        .editor-content {
+            padding: 16px;
+        }
+
+        .editor-textarea {
+            width: 100%;
+            min-height: 500px;
+            padding: 16px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 15px;
+            line-height: 1.8;
+            resize: vertical;
+        }
+
+        .preview-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .preview-header {
+            background: #fff;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preview-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .preview-device-selector {
+            display: flex;
+            gap: 8px;
+        }
+
+        .device-btn {
+            padding: 4px 12px;
+            border: 1px solid #dee2e6;
+            background: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .device-btn.active {
+            background: #007bff;
+            color: #fff;
+            border-color: #007bff;
+        }
+
+        .preview-content {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .phone-mockup {
+            width: 375px;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .phone-header {
+            background: #f5f5f5;
+            padding: 12px 16px;
+            text-align: center;
+            font-size: 14px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .phone-body {
+            padding: 20px;
+            min-height: 500px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .pc-mockup {
+            width: 100%;
+            max-width: 800px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .pc-header {
+            background: #f5f5f5;
+            padding: 12px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pc-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .pc-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .pc-dot.red { background: #ff5f56; }
+        .pc-dot.yellow { background: #ffbd2e; }
+        .pc-dot.green { background: #27c93f; }
+
+        .pc-body {
+            padding: 30px;
+            min-height: 500px;
+        }
+
+        .article-meta {
+            display: flex;
+            gap: 20px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .meta-item {
+            font-size: 14px;
+            color: #6c757d;
+        }
+
+        .meta-item strong {
+            color: #495057;
+        }
+
+        .format-selector {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .format-option {
+            flex: 1;
+            padding: 16px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .format-option:hover {
+            border-color: #adb5bd;
+        }
+
+        .format-option.selected {
+            border-color: #007bff;
+            background: rgba(0,123,255,0.05);
+        }
+
+        .format-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .format-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        @media (max-width: 1024px) {
+            .preview-wrapper {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="logo" onclick="window.location.href='/'" style="cursor: pointer;">
+                🎙️ 播客转文章
+            </div>
+            <div class="nav-steps">
+                <div class="nav-step completed">
+                    <span class="step-number">✓</span>
+                    <span>输入链接</span>
+                </div>
+                <div class="nav-step completed">
+                    <span class="step-number">✓</span>
+                    <span>选择平台</span>
+                </div>
+                <div class="nav-step completed">
+                    <span class="step-number">✓</span>
+                    <span>定制风格</span>
+                </div>
+                <div class="nav-step active">
+                    <span class="step-number">4</span>
+                    <span>预览保存</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容 -->
+    <div class="container container-wide">
+        <div class="card fade-in">
+            <div class="card-header">
+                <h1 class="card-title">👀 预览与编辑</h1>
+                <p class="card-subtitle">在线编辑文章内容，实时预览效果，满意后保存</p>
+            </div>
+
+            <div id="alert-container"></div>
+
+            <!-- 模拟模式警告 -->
+            <div id="mock-mode-warning" style="display: none; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 20px;">⚠️</span>
+                    <div>
+                        <div style="font-weight: 600; color: #856404;">当前为模拟模式</div>
+                        <div style="font-size: 13px; color: #856404; margin-top: 4px;">
+                            系统已应用基础风格转换（叙述者替换、排版格式等）。配置 ANTHROPIC_API_KEY 环境变量可启用AI智能生成，获得更好的风格转换效果。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 文章元信息 -->
+            <div class="article-meta" id="article-meta">
+                <div class="meta-item">
+                    <strong>平台：</strong><span id="meta-platform">-</span>
+                </div>
+                <div class="meta-item">
+                    <strong>叙述者：</strong><span id="meta-narrator">-</span>
+                </div>
+                <div class="meta-item">
+                    <strong>字数：</strong><span id="meta-wordcount">-</span>
+                </div>
+                <div class="meta-item">
+                    <strong>阅读时间：</strong><span id="meta-readtime">-</span>
+                </div>
+            </div>
+
+            <!-- 格式选择 -->
+            <div class="input-group">
+                <label class="input-label">保存格式</label>
+                <div class="format-selector">
+                    <div class="format-option selected" data-format="html" onclick="selectFormat('html')">
+                        <div class="format-icon">🌐</div>
+                        <div class="format-name">HTML</div>
+                    </div>
+                    <div class="format-option" data-format="markdown" onclick="selectFormat('markdown')">
+                        <div class="format-icon">📝</div>
+                        <div class="format-name">Markdown</div>
+                    </div>
+                    <div class="format-option" data-format="txt" onclick="selectFormat('txt')">
+                        <div class="format-icon">📄</div>
+                        <div class="format-name">纯文本</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 编辑器与预览 -->
+            <div class="preview-wrapper">
+                <!-- 编辑器 -->
+                <div class="editor-section">
+                    <div class="editor-header">
+                        <span class="editor-title">✏️ 编辑器</span>
+                        <div class="editor-toolbar">
+                            <button class="toolbar-btn" onclick="insertText('**', '**')">粗体</button>
+                            <button class="toolbar-btn" onclick="insertText('*', '*')">斜体</button>
+                            <button class="toolbar-btn" onclick="insertText('<u>', '</u>')">下划线</button>
+                            <button class="toolbar-btn" onclick="insertColor()" title="文字颜色">🎨</button>
+                            <button class="toolbar-btn" onclick="insertText('## ', '')">标题</button>
+                            <button class="toolbar-btn" onclick="insertText('- ', '')">列表</button>
+                        </div>
+                    </div>
+                    <div class="editor-content">
+                        <textarea id="editor" class="editor-textarea" placeholder="文章内容将在这里显示..."></textarea>
+                    </div>
+                </div>
+
+                <!-- 预览 -->
+                <div class="preview-section">
+                    <div class="preview-header">
+                        <span class="preview-title">📱 实时预览</span>
+                        <div class="preview-device-selector">
+                            <button class="device-btn active" onclick="switchDevice('phone')">手机</button>
+                            <button class="device-btn" onclick="switchDevice('pc')">电脑</button>
+                        </div>
+                    </div>
+                    <div class="preview-content">
+                        <!-- 手机预览 -->
+                        <div class="phone-mockup" id="phone-preview">
+                            <div class="phone-header">微信公众号预览</div>
+                            <div class="phone-body" id="preview-body">
+                                <p style="color: #999; text-align: center;">点击生成文章查看预览</p>
+                            </div>
+                        </div>
+                        <!-- 电脑预览 -->
+                        <div class="pc-mockup" id="pc-preview" style="display: none;">
+                            <div class="pc-header">
+                                <div class="pc-dots">
+                                    <div class="pc-dot red"></div>
+                                    <div class="pc-dot yellow"></div>
+                                    <div class="pc-dot green"></div>
+                                </div>
+                                <span style="font-size: 12px; color: #666;">微信公众号文章</span>
+                            </div>
+                            <div class="pc-body" id="pc-preview-body">
+                                <p style="color: #999; text-align: center;">点击生成文章查看预览</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 按钮组 -->
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="window.location.href='/style'">
+                    ← 返回修改
+                </button>
+                <button class="btn btn-primary" onclick="regenerate()">
+                    🔄 重新生成
+                </button>
+                <button class="btn btn-primary" onclick="saveArticle()" id="save-btn">
+                    💾 保存文章
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFormat = 'html';
+        let articleData = null;
+        let currentDevice = 'phone';
+
+        // 页面加载 - 强制检查必须有内容
+        document.addEventListener('DOMContentLoaded', function() {
+            // 强制检查：必须有转录内容才能进入此页面
+            const content = localStorage.getItem('transcript_content');
+            if (!content) {
+                showAlert('暂无内容，请先返回首页完成转录', 'error');
+                setTimeout(() => window.location.href = '/', 1500);
+                return;
+            }
+            loadArticle();
+        });
+
+        function loadArticle() {
+            // 尝试从本地存储加载文章
+            const saved = localStorage.getItem('generated_article');
+            const platform = localStorage.getItem('selected_platform');
+            const transcriptContent = localStorage.getItem('transcript_content');
+
+            if (saved) {
+                articleData = JSON.parse(saved);
+                updateEditor(articleData);
+                updateMeta(platform);
+
+                // 检查是否是模拟模式
+                const isMockMode = localStorage.getItem('is_mock_mode') === 'true';
+                if (isMockMode || (articleData.content && articleData.content.includes('【模拟模式】'))) {
+                    document.getElementById('mock-mode-warning').style.display = 'block';
+                }
+            } else if (transcriptContent) {
+                // 如果没有生成的文章，但有转录内容，显示转录内容
+                document.getElementById('editor').value = transcriptContent;
+                updatePreview();
+                updateMeta(platform, transcriptContent.length);
+                showAlert('请先回到风格页面生成文章', 'info');
+            } else {
+                showAlert('暂无内容，请先输入播客链接', 'error');
+                setTimeout(() => window.location.href = '/', 1500);
+            }
+        }
+
+        function updateEditor(data) {
+            if (data.content) {
+                document.getElementById('editor').value = data.content;
+                updatePreview();
+            }
+        }
+
+        function updateMeta(platform, wordCount) {
+            const platformNames = {
+                'wechat': '微信公众号',
+                'xiaohongshu': '小红书'
+            };
+
+            document.getElementById('meta-platform').textContent = platformNames[platform] || '-';
+
+            // 显示叙述者
+            const style = getStyleParams();
+            document.getElementById('meta-narrator').textContent = style.narrator || '我的朋友';
+
+            const content = document.getElementById('editor').value;
+            const count = wordCount || content.length;
+            document.getElementById('meta-wordcount').textContent = count.toLocaleString() + ' 字';
+
+            const readTime = Math.max(1, Math.ceil(count / 500));
+            document.getElementById('meta-readtime').textContent = readTime + ' 分钟';
+        }
+
+        // 获取风格参数
+        function getStyleParams() {
+            const saved = localStorage.getItem('style_params');
+            if (saved) {
+                return JSON.parse(saved);
+            }
+            // 默认参数
+            return {
+                narrator: '我的朋友',
+                first_line_indent: true,
+                line_height: 2.0,
+                font_size: 16,
+                use_emoji: true,
+                bullet_points: true,
+                highlight_key_points: true
+            };
+        }
+
+        // Markdown 转换为 HTML（支持粗体、斜体、下划线、颜色）
+        function markdownToHtml(text) {
+            if (!text) return '';
+            // 颜色: <span style="color: #xxx;">text</span> 或 <span style="color: red;">text</span>
+            text = text.replace(/<span style="color:\s*([^"]+);"\s*>(.+?)<\/span>/g, '<span style="color: $1;">$2</span>');
+            // 下划线: <u>text</u>
+            text = text.replace(/<u>(.+?)<\/u>/g, '<u>$1</u>');
+            // 粗体: **text** 或 __text__
+            text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            text = text.replace(/__(.+?)__/g, '<strong>$1</strong>');
+            // 斜体: *text* 或 _text_
+            text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            text = text.replace(/_(.+?)_/g, '<em>$1</em>');
+            return text;
+        }
+
+        function updatePreview() {
+            const content = document.getElementById('editor').value;
+            const platform = localStorage.getItem('selected_platform');
+            const style = getStyleParams();
+
+            // 应用风格参数到预览
+            const fontSize = style.font_size || 16;
+            const lineHeight = style.line_height || 2.0;
+            const firstIndent = style.first_line_indent ? 'text-indent: 2em;' : '';
+
+            if (platform === 'wechat') {
+                // 微信公众号样式 - 应用用户设置的风格
+                const styledContent = `
+                    <div style="font-size: ${fontSize}px; line-height: ${lineHeight}; color: #333;">
+                        ${content.split('\n').map((line, index) => {
+                            if (!line.trim()) return '<p style="margin-bottom: 1em;"></p>';
+                            // 转换 Markdown 粗体和斜体
+                            line = markdownToHtml(line);
+                            // 第一行可能是标题，不缩进
+                            const indent = index === 0 ? '' : firstIndent;
+                            return `<p style="${indent} margin-bottom: 1em; line-height: ${lineHeight};">${line}</p>`;
+                        }).join('')}
+                    </div>
+                `;
+                document.getElementById('preview-body').innerHTML = styledContent;
+                document.getElementById('pc-preview-body').innerHTML = styledContent;
+            } else {
+                // 小红书样式
+                const useEmoji = style.use_emoji;
+                const bulletPoints = style.bullet_points;
+                const highlight = style.highlight_key_points;
+
+                let styledContent = content.split('\n').map((line, index) => {
+                    if (!line.trim()) return '<p style="margin-bottom: 0.5em;"></p>';
+
+                    // 转换 Markdown 粗体和斜体
+                    line = markdownToHtml(line);
+
+                    // 添加emoji（如果是小红书风格）
+                    if (useEmoji && index > 0 && line.length > 10) {
+                        line = '✨ ' + line;
+                    }
+
+                    // 高亮重点（只在没有手动加粗的情况下）
+                    if (highlight && line.includes('：') && !line.includes('<strong>')) {
+                        const parts = line.split('：');
+                        line = `<strong>${parts[0]}</strong>：${parts.slice(1).join('：')}`;
+                    }
+
+                    return `<p style="margin-bottom: 0.8em; line-height: 1.8;">${line}</p>`;
+                }).join('');
+
+                // 添加标签
+                if (style.tags) {
+                    styledContent += `<p style="margin-top: 20px; color: #999;">${style.tags}</p>`;
+                }
+
+                document.getElementById('preview-body').innerHTML = styledContent;
+                document.getElementById('pc-preview-body').innerHTML = styledContent;
+            }
+
+            // 更新字数统计
+            updateMeta(platform);
+        }
+
+        // 编辑器内容变化时更新预览
+        document.getElementById('editor').addEventListener('input', updatePreview);
+
+        function switchDevice(device) {
+            currentDevice = device;
+            document.querySelectorAll('.device-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            if (device === 'phone') {
+                document.getElementById('phone-preview').style.display = 'block';
+                document.getElementById('pc-preview').style.display = 'none';
+            } else {
+                document.getElementById('phone-preview').style.display = 'none';
+                document.getElementById('pc-preview').style.display = 'block';
+            }
+        }
+
+        function selectFormat(format) {
+            selectedFormat = format;
+            document.querySelectorAll('.format-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            document.querySelector(`[data-format="${format}"]`).classList.add('selected');
+        }
+
+        function insertText(before, after) {
+            const editor = document.getElementById('editor');
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            const text = editor.value;
+            const selected = text.substring(start, end);
+
+            editor.value = text.substring(0, start) + before + selected + after + text.substring(end);
+            editor.focus();
+            editor.setSelectionRange(start + before.length, end + before.length);
+
+            updatePreview();
+        }
+
+        // 插入颜色
+        function insertColor() {
+            const colors = [
+                { name: '红色', value: '#ff0000' },
+                { name: '橙色', value: '#ff6600' },
+                { name: '黄色', value: '#ffcc00' },
+                { name: '绿色', value: '#00cc00' },
+                { name: '蓝色', value: '#0066ff' },
+                { name: '紫色', value: '#9900ff' },
+                { name: '粉色', value: '#ff66cc' },
+                { name: '灰色', value: '#666666' }
+            ];
+
+            // 创建颜色选择弹窗
+            const colorPicker = document.createElement('div');
+            colorPicker.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: white;
+                border-radius: 8px;
+                padding: 16px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                z-index: 10000;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                max-width: 300px;
+            `;
+
+            colors.forEach(color => {
+                const btn = document.createElement('button');
+                btn.style.cssText = `
+                    width: 50px;
+                    height: 40px;
+                    background: ${color.value};
+                    border: 2px solid #ddd;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    color: white;
+                    font-size: 12px;
+                    text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+                `;
+                btn.textContent = color.name;
+                btn.onclick = () => {
+                    insertText(`<span style="color: ${color.value};">`, '</span>');
+                    document.body.removeChild(colorPicker);
+                    document.body.removeChild(overlay);
+                };
+                colorPicker.appendChild(btn);
+            });
+
+            // 添加遮罩层
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                z-index: 9999;
+            `;
+            overlay.onclick = () => {
+                document.body.removeChild(colorPicker);
+                document.body.removeChild(overlay);
+            };
+
+            document.body.appendChild(overlay);
+            document.body.appendChild(colorPicker);
+        }
+
+        async function saveArticle() {
+            const btn = document.getElementById('save-btn');
+            const originalText = btn.textContent;
+
+            const title = document.querySelector('#editor').value.split('\n')[0].substring(0, 50) || '未命名文章';
+            const content = document.getElementById('editor').value;
+            const platform = localStorage.getItem('selected_platform');
+
+            btn.textContent = '保存中...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: title,
+                        content: content,
+                        platform: platform,
+                        format: selectedFormat
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert(`文章已保存：${data.data.filename}`, 'info');
+
+                    // 创建下载链接
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = data.data.download_url;
+                    downloadLink.download = data.data.filename;
+                    downloadLink.textContent = '点击下载';
+                    downloadLink.style.marginLeft = '10px';
+
+                    const alertContainer = document.getElementById('alert-container');
+                    alertContainer.querySelector('.alert').appendChild(downloadLink);
+                } else {
+                    showAlert(data.error || '保存失败', 'error');
+                }
+            } catch (error) {
+                showAlert('保存失败，请重试', 'error');
+                console.error(error);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        function regenerate() {
+            if (confirm('确定要重新生成文章吗？当前编辑的内容将丢失。')) {
+                localStorage.removeItem('generated_article');
+                window.location.href = '/style';
+            }
+        }
+
+        function showAlert(message, type = 'info') {
+            const container = document.getElementById('alert-container');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            container.innerHTML = '';
+            container.appendChild(alertDiv);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>播客转文章 - 一键生成微信公众号/小红书文章</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="logo">
+                🎙️ 播客转文章
+            </div>
+            <div class="nav-steps">
+                <div class="nav-step active">
+                    <span class="step-number">1</span>
+                    <span>输入链接</span>
+                </div>
+                <div class="nav-step">
+                    <span class="step-number">2</span>
+                    <span>选择平台</span>
+                </div>
+                <div class="nav-step">
+                    <span class="step-number">3</span>
+                    <span>定制风格</span>
+                </div>
+                <div class="nav-step">
+                    <span class="step-number">4</span>
+                    <span>预览保存</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容 -->
+    <div class="container">
+        <div class="card fade-in">
+            <div class="card-header">
+                <h1 class="card-title">🎯 开始转换</h1>
+                <p class="card-subtitle">输入小宇宙播客链接，一键生成微信公众号或小红书文章</p>
+            </div>
+
+            <div id="alert-container"></div>
+
+            <!-- 进度显示面板 -->
+            <div id="progress-panel" style="display: none; margin: 24px 0; padding: 20px; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-radius: 12px; border: 1px solid #e2e8f0;">
+                <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                    <div class="spinner" style="width: 24px; height: 24px; border-width: 3px; margin-right: 12px;"></div>
+                    <h3 id="progress-title" style="margin: 0; font-size: 18px; color: #1e293b;">正在处理...</h3>
+                </div>
+
+                <!-- 进度条 -->
+                <div style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-bottom: 16px;">
+                    <div id="progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%); transition: width 0.5s ease; border-radius: 4px;"></div>
+                </div>
+
+                <!-- 当前步骤 -->
+                <div id="progress-step" style="font-size: 14px; color: #64748b; margin-bottom: 8px; font-weight: 500;">
+                    准备开始...
+                </div>
+
+                <!-- 详细日志 -->
+                <div id="progress-log" style="font-size: 12px; color: #94a3b8; font-family: monospace; max-height: 150px; overflow-y: auto; padding: 12px; background: #0f172a; border-radius: 8px; line-height: 1.6;">
+                    <div style="color: #4ade80;">> 系统初始化完成</div>
+                </div>
+
+                <!-- 预计时间 -->
+                <div id="progress-eta" style="margin-top: 12px; font-size: 13px; color: #94a3b8; text-align: right;">
+                    预计剩余时间: 计算中...
+                </div>
+
+                <!-- 跳过选项 -->
+                <div id="skip-option" style="margin-top: 16px; padding-top: 16px; border-top: 1px dashed #cbd5e1; text-align: center; display: none;">
+                    <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">
+                        ⏱️ 音频转录需要较长时间？
+                    </p>
+                    <button class="btn btn-secondary" onclick="skipTranscription()">
+                        📝 直接粘贴转录内容
+                    </button>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label class="input-label">小宇宙播客链接</label>
+                <input
+                    type="url"
+                    id="podcast-url"
+                    class="input-field"
+                    placeholder="https://www.xiaoyuzhoufm.com/episode/xxxxx"
+                >
+                <p style="font-size: 14px; color: var(--text-secondary); margin-top: 8px;">
+                    💡 支持自动提取播客信息、搜索外部文稿、转录音频
+                </p>
+            </div>
+
+            <div class="input-group">
+                <label class="input-label">或粘贴已转录的内容（可选）</label>
+                <textarea
+                    id="transcript-content"
+                    class="input-field"
+                    placeholder="如果您已经有转录好的文字内容，可以直接粘贴在这里..."
+                ></textarea>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary btn-large" onclick="startAnalysis()">
+                    <span>开始分析</span>
+                    <span id="btn-spinner" style="display: none;"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 功能介绍 -->
+        <div class="card fade-in" style="margin-top: 30px;">
+            <div class="card-header">
+                <h2 class="card-title" style="font-size: 22px;">✨ 功能特点</h2>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px;">
+                <div style="text-align: center; padding: 20px;">
+                    <div style="font-size: 40px; margin-bottom: 12px;">🤖</div>
+                    <h3 style="font-size: 16px; margin-bottom: 8px;">智能转录</h3>
+                    <p style="font-size: 14px; color: var(--text-secondary);">优先搜索外部文稿，无结果时自动转录音频</p>
+                </div>
+                <div style="text-align: center; padding: 20px;">
+                    <div style="font-size: 40px; margin-bottom: 12px;">📝</div>
+                    <h3 style="font-size: 16px; margin-bottom: 8px;">多平台支持</h3>
+                    <p style="font-size: 14px; color: var(--text-secondary);">一键生成微信公众号和小红书风格文章</p>
+                </div>
+                <div style="text-align: center; padding: 20px;">
+                    <div style="font-size: 40px; margin-bottom: 12px;">🎨</div>
+                    <h3 style="font-size: 16px; margin-bottom: 8px;">风格定制</h3>
+                    <p style="font-size: 14px; color: var(--text-secondary);">多种默认风格，支持自定义参数</p>
+                </div>
+                <div style="text-align: center; padding: 20px;">
+                    <div style="font-size: 40px; margin-bottom: 12px;">👀</div>
+                    <h3 style="font-size: 16px; margin-bottom: 8px;">实时预览</h3>
+                    <p style="font-size: 14px; color: var(--text-secondary);">在线编辑、预览效果、一键保存</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 使用说明 -->
+        <div class="card fade-in" style="margin-top: 30px;">
+            <div class="card-header">
+                <h2 class="card-title" style="font-size: 22px;">📖 使用流程</h2>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div style="display: flex; align-items: start; gap: 16px; padding: 16px; background: var(--bg-color); border-radius: 8px;">
+                    <span style="font-size: 24px; font-weight: bold; color: var(--primary-color);">1</span>
+                    <div>
+                        <h4 style="margin-bottom: 4px;">输入播客链接</h4>
+                        <p style="font-size: 14px; color: var(--text-secondary);">粘贴小宇宙播客链接，系统会自动提取标题、主播等信息</p>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: start; gap: 16px; padding: 16px; background: var(--bg-color); border-radius: 8px;">
+                    <span style="font-size: 24px; font-weight: bold; color: var(--primary-color);">2</span>
+                    <div>
+                        <h4 style="margin-bottom: 4px;">选择目标平台</h4>
+                        <p style="font-size: 14px; color: var(--text-secondary);">选择微信公众号或小红书，查看平台特定的默认风格推荐</p>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: start; gap: 16px; padding: 16px; background: var(--bg-color); border-radius: 8px;">
+                    <span style="font-size: 24px; font-weight: bold; color: var(--primary-color);">3</span>
+                    <div>
+                        <h4 style="margin-bottom: 4px;">定制文章风格</h4>
+                        <p style="font-size: 14px; color: var(--text-secondary);">选择叙述人称、语调、排版风格等参数，精细控制输出效果</p>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: start; gap: 16px; padding: 16px; background: var(--bg-color); border-radius: 8px;">
+                    <span style="font-size: 24px; font-weight: bold; color: var(--primary-color);">4</span>
+                    <div>
+                        <h4 style="margin-bottom: 4px;">预览与保存</h4>
+                        <p style="font-size: 14px; color: var(--text-secondary);">在线预览效果，支持编辑修改，满意后保存为HTML或Markdown</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 页面加载时检查是否有保存的进度
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedUrl = localStorage.getItem('podcast_url');
+            if (savedUrl) {
+                document.getElementById('podcast-url').value = savedUrl;
+            }
+        });
+
+        function showAlert(message, type = 'info') {
+            const container = document.getElementById('alert-container');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            container.innerHTML = '';
+            container.appendChild(alertDiv);
+        }
+
+        function showLoading(show) {
+            const spinner = document.getElementById('btn-spinner');
+            if (show) {
+                spinner.className = 'spinner';
+                spinner.style.display = 'inline-block';
+            } else {
+                spinner.style.display = 'none';
+            }
+        }
+
+        let currentTaskId = null;
+        let progressCheckInterval = null;
+        let startTime = null;
+
+        function showProgress(show) {
+            const panel = document.getElementById('progress-panel');
+            const inputGroup = document.querySelector('.input-group');
+            const btnGroup = document.querySelector('.btn-group');
+
+            if (show) {
+                panel.style.display = 'block';
+                inputGroup.style.opacity = '0.5';
+                btnGroup.style.opacity = '0.5';
+                inputGroup.style.pointerEvents = 'none';
+                btnGroup.style.pointerEvents = 'none';
+            } else {
+                panel.style.display = 'none';
+                inputGroup.style.opacity = '1';
+                btnGroup.style.opacity = '1';
+                inputGroup.style.pointerEvents = 'auto';
+                btnGroup.style.pointerEvents = 'auto';
+            }
+        }
+
+        function updateProgress(percent, step, log, eta) {
+            const bar = document.getElementById('progress-bar');
+            const stepEl = document.getElementById('progress-step');
+            const logEl = document.getElementById('progress-log');
+            const etaEl = document.getElementById('progress-eta');
+
+            bar.style.width = percent + '%';
+            stepEl.textContent = step || '处理中...';
+            if (eta) etaEl.textContent = eta;
+
+            if (log) {
+                const time = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+                const logLine = document.createElement('div');
+                logLine.style.marginTop = '4px';
+
+                // 根据内容类型着色
+                if (log.includes('✅') || log.includes('完成') || log.includes('成功')) {
+                    logLine.style.color = '#4ade80';
+                } else if (log.includes('❌') || log.includes('失败') || log.includes('错误')) {
+                    logLine.style.color = '#f87171';
+                } else if (log.includes('⚠️') || log.includes('警告')) {
+                    logLine.style.color = '#fbbf24';
+                } else {
+                    logLine.style.color = '#94a3b8';
+                }
+
+                logLine.textContent = `[${time}] ${log}`;
+                logEl.appendChild(logLine);
+                logEl.scrollTop = logEl.scrollHeight;
+            }
+
+            // 显示跳过选项（当进入音频转录阶段时）
+            if (step && (step.includes('音频转录') || step.includes('AI转录'))) {
+                const skipOption = document.getElementById('skip-option');
+                if (skipOption) skipOption.style.display = 'block';
+            }
+        }
+
+        // 显示详细的模式状态
+        function updateModeStatus(task, showFailed = false) {
+            if (!task.modes) return;
+
+            const modes = task.modes;
+            let html = '<div style="margin-top: 16px; padding: 12px; background: #1e293b; border-radius: 8px;">';
+            html += '<h4 style="margin: 0 0 12px 0; color: #e2e8f0; font-size: 14px;">处理进度：</h4>';
+
+            // Article模式状态
+            const articleStatus = modes.article.status;
+            let articleIcon = '⏳';
+            let articleColor = '#94a3b8';
+            if (articleStatus === 'completed') { articleIcon = '✅'; articleColor = '#4ade80'; }
+            else if (articleStatus === 'failed') { articleIcon = '❌'; articleColor = '#f87171'; }
+            else if (articleStatus === 'fetching' || articleStatus === 'searching') { articleIcon = '🔄'; articleColor = '#fbbf24'; }
+
+            html += `<div style="margin-bottom: 8px; padding: 8px; background: #0f172a; border-radius: 4px;">`;
+            html += `<div style="color: ${articleColor}; font-weight: 500;">${articleIcon} Article模式</div>`;
+            html += `<div style="color: #94a3b8; font-size: 12px; margin-top: 4px;">${modes.article.message || ''}</div>`;
+
+            // 如果Article模式失败且显示失败信息，显示失败的文章链接
+            if (showFailed && modes.article.failed_articles && modes.article.failed_articles.length > 0) {
+                html += '<div style="margin-top: 8px; font-size: 11px; color: #f87171;">';
+                html += '<div style="margin-bottom: 4px;">无法获取的文章：</div>';
+                modes.article.failed_articles.forEach((article, idx) => {
+                    html += `<div style="margin: 2px 0; padding: 4px; background: #1e293b; border-radius: 2px;">`;
+                    html += `<div style="color: #fbbf24;">${idx + 1}. ${article.title}</div>`;
+                    html += `<div style="color: #64748b; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${article.url}</div>`;
+                    html += `</div>`;
+                });
+                html += '</div>';
+            }
+            html += '</div>';
+
+            // Audio模式状态
+            const audioStatus = modes.audio.status;
+            let audioIcon = '⏳';
+            let audioColor = '#94a3b8';
+            if (audioStatus === 'completed') { audioIcon = '✅'; audioColor = '#4ade80'; }
+            else if (audioStatus === 'failed') { audioIcon = '❌'; audioColor = '#f87171'; }
+            else if (audioStatus === 'downloading' || audioStatus === 'processing') { audioIcon = '🔄'; audioColor = '#fbbf24'; }
+
+            html += `<div style="margin-bottom: 8px; padding: 8px; background: #0f172a; border-radius: 4px;">`;
+            html += `<div style="color: ${audioColor}; font-weight: 500;">${audioIcon} Audio模式</div>`;
+            html += `<div style="color: #94a3b8; font-size: 12px; margin-top: 4px;">${modes.audio.message || ''}</div>`;
+            if (modes.audio.error) {
+                html += `<div style="color: #f87171; font-size: 11px; margin-top: 4px;">错误: ${modes.audio.error}</div>`;
+            }
+            html += '</div>';
+
+            // Shownotes模式状态
+            const shownotesStatus = modes.shownotes.status;
+            let shownotesIcon = '⏳';
+            let shownotesColor = '#94a3b8';
+            if (shownotesStatus === 'completed') { shownotesIcon = '✅'; shownotesColor = '#4ade80'; }
+            else if (shownotesStatus === 'failed') { shownotesIcon = '❌'; shownotesColor = '#f87171'; }
+            else if (shownotesStatus === 'processing') { shownotesIcon = '🔄'; shownotesColor = '#fbbf24'; }
+
+            html += `<div style="padding: 8px; background: #0f172a; border-radius: 4px;">`;
+            html += `<div style="color: ${shownotesColor}; font-weight: 500;">${shownotesIcon} Shownotes模式</div>`;
+            html += `<div style="color: #94a3b8; font-size: 12px; margin-top: 4px;">${modes.shownotes.message || ''}</div>`;
+            html += '</div>';
+
+            html += '</div>';
+
+            // 查找或创建状态显示区域
+            let modeStatusEl = document.getElementById('mode-status-display');
+            if (!modeStatusEl) {
+                modeStatusEl = document.createElement('div');
+                modeStatusEl.id = 'mode-status-display';
+                const progressLog = document.getElementById('progress-log');
+                if (progressLog && progressLog.parentNode) {
+                    progressLog.parentNode.insertBefore(modeStatusEl, progressLog);
+                }
+            }
+            modeStatusEl.innerHTML = html;
+        }
+
+        function skipTranscription() {
+            // 停止轮询
+            if (progressCheckInterval) {
+                clearInterval(progressCheckInterval);
+                progressCheckInterval = null;
+            }
+
+            // 显示粘贴框
+            showProgress(false);
+            document.getElementById('transcript-content').focus();
+            showAlert('请在下方"粘贴已转录的内容"区域输入文字，然后点击"开始分析"', 'info');
+
+            // 滚动到粘贴区域
+            document.getElementById('transcript-content').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // 任务不存在错误计数
+        let taskNotFoundCount = 0;
+
+        async function checkTaskStatus(taskId) {
+            try {
+                const response = await fetch(`/api/task/${taskId}`);
+                const data = await response.json();
+
+                if (!data.success) {
+                    // 任务不存在（404）
+                    if (response.status === 404) {
+                        taskNotFoundCount++;
+                        if (taskNotFoundCount >= 2) {
+                            updateProgress(0, '任务已丢失', '服务器重启或任务过期，请重新开始', '');
+                            clearInterval(progressCheckInterval);
+                            progressCheckInterval = null;
+                            setTimeout(() => {
+                                if (confirm('任务已丢失，是否重新开始？')) {
+                                    showProgress(false);
+                                    startAnalysis();
+                                } else {
+                                    showProgress(false);
+                                }
+                            }, 500);
+                        }
+                    } else {
+                        updateProgress(0, '检查任务状态失败', '无法获取任务状态', '');
+                    }
+                    return null;
+                }
+
+                // 成功获取，重置计数
+                taskNotFoundCount = 0;
+
+                const task = data.data;
+
+                // 更新进度显示
+                updateProgress(
+                    task.progress || 0,
+                    task.message || '处理中...',
+                    task.message,
+                    calculateETA(task.progress)
+                );
+
+                return task;
+            } catch (error) {
+                console.error('检查任务状态出错:', error);
+                return null;
+            }
+        }
+
+        function calculateETA(progress) {
+            if (!startTime || progress <= 0) return '计算中...';
+
+            const elapsed = (Date.now() - startTime) / 1000; // 秒
+            const estimatedTotal = elapsed / (progress / 100);
+            const remaining = estimatedTotal - elapsed;
+
+            if (remaining < 60) return `预计剩余: ${Math.ceil(remaining)}秒`;
+            if (remaining < 3600) return `预计剩余: ${Math.ceil(remaining / 60)}分钟`;
+            return `预计剩余: ${(remaining / 3600).toFixed(1)}小时`;
+        }
+
+        async function startAnalysis() {
+            const url = document.getElementById('podcast-url').value.trim();
+            const transcriptContent = document.getElementById('transcript-content').value.trim();
+
+            // 保存到本地存储
+            if (url) {
+                localStorage.setItem('podcast_url', url);
+            }
+
+            // 如果有粘贴的内容，保存并跳转到平台选择
+            if (transcriptContent) {
+                localStorage.setItem('transcript_content', transcriptContent);
+                localStorage.setItem('transcript_source', 'pasted');
+                window.location.href = '/platform';
+                return;
+            }
+
+            if (!url) {
+                showAlert('请输入小宇宙播客链接或粘贴转录内容', 'error');
+                return;
+            }
+
+            if (!url.includes('xiaoyuzhou')) {
+                showAlert('请输入有效的小宇宙播客链接', 'error');
+                return;
+            }
+
+            // 显示进度面板
+            showProgress(true);
+            startTime = Date.now();
+            updateProgress(0, '正在启动...', '> 开始处理播客链接');
+
+            try {
+                // 开始分析播客
+                updateProgress(5, '正在分析播客信息...', '正在发送分析请求');
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    localStorage.setItem('analysis_task_id', data.task_id);
+                    localStorage.setItem('podcast_url', url);
+                    updateProgress(10, '分析任务已启动', '✅ 分析任务创建成功');
+
+                    // 开始转录任务
+                    updateProgress(15, '正在启动转录任务...', '正在发送转录请求');
+                    const transcribeResponse = await fetch('/api/transcribe', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url: url, task_id: data.task_id })
+                    });
+
+                    const transcribeData = await transcribeResponse.json();
+
+                    if (transcribeData.success) {
+                        currentTaskId = transcribeData.task_id;
+                        localStorage.setItem('transcribe_task_id', currentTaskId);
+                        updateProgress(20, '转录任务已启动', '✅ 转录任务创建成功，开始监控进度');
+
+                        // 开始轮询任务状态
+                        startProgressMonitoring(currentTaskId);
+                    } else {
+                        updateProgress(0, '转录任务启动失败', '❌ ' + (transcribeData.error || '转录失败'), '');
+                        showProgress(false);
+                        showAlert(transcribeData.error || '转录失败', 'error');
+                    }
+                } else {
+                    updateProgress(0, '分析失败', '❌ ' + (data.error || '分析失败'), '');
+                    showProgress(false);
+                    showAlert(data.error || '分析失败', 'error');
+                }
+            } catch (error) {
+                updateProgress(0, '网络错误', '❌ 网络错误: ' + error.message, '');
+                showProgress(false);
+                showAlert('网络错误，请重试', 'error');
+                console.error(error);
+            }
+        }
+
+        function startProgressMonitoring(taskId) {
+            // 立即检查一次
+            checkTaskStatus(taskId);
+
+            // 每3秒检查一次
+            progressCheckInterval = setInterval(async () => {
+                const task = await checkTaskStatus(taskId);
+
+                if (!task) return;
+
+                // 更新详细模式状态显示
+                // 如果Article模式失败，显示失败的文章链接
+                const showFailedArticles = task.modes && task.modes.article && task.modes.article.status === 'failed';
+                updateModeStatus(task, showFailedArticles);
+
+                // 根据状态处理
+                if (task.status === 'completed') {
+                    clearInterval(progressCheckInterval);
+                    updateProgress(100, '✅ 转录完成！', '正在跳转到下一步...');
+
+                    // 保存转录内容
+                    if (task.data && task.data.content) {
+                        localStorage.setItem('transcript_content', task.data.content);
+                        localStorage.setItem('transcript_source', 'transcribed');
+                        localStorage.removeItem('transcribe_task_id'); // 清理任务ID
+                    }
+
+                    setTimeout(() => {
+                        window.location.href = '/platform';
+                    }, 1500);
+                } else if (task.status === 'error') {
+                    clearInterval(progressCheckInterval);
+                    updateProgress(0, '❌ 处理失败', task.message || '未知错误');
+                    updateModeStatus(task, true);
+
+                    // 显示重试按钮
+                    setTimeout(() => {
+                        if (confirm('处理失败: ' + task.message + '\n\n是否重试？')) {
+                            showProgress(false);
+                            startAnalysis();
+                        } else {
+                            showProgress(false);
+                        }
+                    }, 500);
+                }
+                // 其他状态继续轮询
+            }, 3000);
+        }
+
+        // 回车键提交
+        document.getElementById('podcast-url').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                startAnalysis();
+            }
+        });
+    </script>
+</body>
+</html>

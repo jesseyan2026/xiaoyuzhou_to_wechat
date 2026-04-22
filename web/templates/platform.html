@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>选择平台 - 播客转文章</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="logo" onclick="window.location.href='/'" style="cursor: pointer;">
+                🎙️ 播客转文章
+            </div>
+            <div class="nav-steps">
+                <div class="nav-step completed">
+                    <span class="step-number">✓</span>
+                    <span>输入链接</span>
+                </div>
+                <div class="nav-step active">
+                    <span class="step-number">2</span>
+                    <span>选择平台</span>
+                </div>
+                <div class="nav-step">
+                    <span class="step-number">3</span>
+                    <span>定制风格</span>
+                </div>
+                <div class="nav-step">
+                    <span class="step-number">4</span>
+                    <span>预览保存</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容 -->
+    <div class="container">
+        <div class="card fade-in">
+            <div class="card-header">
+                <h1 class="card-title">📱 选择目标平台</h1>
+                <p class="card-subtitle">选择您想要生成文章的平台，不同平台有不同的风格特点</p>
+            </div>
+
+            <div id="alert-container"></div>
+
+            <!-- 平台选择卡片 -->
+            <div class="platform-grid" id="platform-grid">
+                <!-- 平台卡片将通过JS动态生成 -->
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="window.location.href='/'">
+                    ← 返回上一步
+                </button>
+                <button class="btn btn-primary" id="next-btn" onclick="goToStyle()" disabled>
+                    下一步：定制风格 →
+                </button>
+            </div>
+        </div>
+
+        <!-- 平台特点说明 -->
+        <div class="card fade-in" style="margin-top: 30px;">
+            <div class="card-header">
+                <h2 class="card-title" style="font-size: 22px;">💡 如何选择？</h2>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+                <div style="padding: 20px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #0ea5e9;">
+                    <h3 style="font-size: 16px; margin-bottom: 12px; color: #0369a1;">微信公众号适合：</h3>
+                    <ul style="font-size: 14px; color: var(--text-secondary); padding-left: 20px; line-height: 2;">
+                        <li>深度长文，内容详实</li>
+                        <li>故事叙述，情感共鸣</li>
+                        <li>专业分析，观点输出</li>
+                        <li>排版精美，图文并茂</li>
+                    </ul>
+                </div>
+                <div style="padding: 20px; background: #fef2f2; border-radius: 8px; border-left: 4px solid #ef4444;">
+                    <h3 style="font-size: 16px; margin-bottom: 12px; color: #b91c1c;">小红书适合：</h3>
+                    <ul style="font-size: 14px; color: var(--text-secondary); padding-left: 20px; line-height: 2;">
+                        <li>短小精悍，快速阅读</li>
+                        <li>干货分享，要点清晰</li>
+                        <li>种草推荐，情感连接</li>
+                        <li>轻松活泼，emoji丰富</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedPlatform = null;
+        let platformConfigs = {};
+
+        // 加载平台配置
+        async function loadPlatforms() {
+            try {
+                const response = await fetch('/api/platforms');
+                const data = await response.json();
+
+                if (data.success) {
+                    platformConfigs = data.data;
+                    renderPlatforms();
+                } else {
+                    showAlert('加载平台配置失败', 'error');
+                }
+            } catch (error) {
+                console.error(error);
+                // 使用默认配置
+                platformConfigs = {
+                    'wechat': {
+                        'name': '微信公众号',
+                        'icon': '📱',
+                        'description': '适合深度长文，支持HTML格式',
+                        'max_length': 20000
+                    },
+                    'xiaohongshu': {
+                        'name': '小红书',
+                        'icon': '📕',
+                        'description': '短平快，emoji丰富，适合种草',
+                        'max_length': 1000
+                    }
+                };
+                renderPlatforms();
+            }
+        }
+
+        function renderPlatforms() {
+            const grid = document.getElementById('platform-grid');
+            grid.innerHTML = '';
+
+            Object.entries(platformConfigs).forEach(([key, config]) => {
+                const card = document.createElement('div');
+                card.className = 'platform-card';
+                card.dataset.platform = key;
+                card.onclick = () => selectPlatform(key);
+
+                card.innerHTML = `
+                    <div class="platform-icon">${config.icon}</div>
+                    <div class="platform-name">${config.name}</div>
+                    <div class="platform-desc">${config.description}</div>
+                    <div style="margin-top: 16px; font-size: 13px; color: var(--text-secondary);">
+                        最大字数: ${config.max_length?.toLocaleString() || '不限'} 字
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        function selectPlatform(platform) {
+            selectedPlatform = platform;
+
+            // 更新UI
+            document.querySelectorAll('.platform-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.querySelector(`[data-platform="${platform}"]`).classList.add('selected');
+
+            // 启用下一步按钮
+            document.getElementById('next-btn').disabled = false;
+
+            // 保存选择
+            localStorage.setItem('selected_platform', platform);
+        }
+
+        function goToStyle() {
+            if (!selectedPlatform) {
+                showAlert('请先选择一个平台', 'error');
+                return;
+            }
+            window.location.href = '/style';
+        }
+
+        function showAlert(message, type = 'info') {
+            const container = document.getElementById('alert-container');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            container.innerHTML = '';
+            container.appendChild(alertDiv);
+        }
+
+        // 页面加载时检查内容并恢复选择
+        document.addEventListener('DOMContentLoaded', function() {
+            // 强制检查：必须有转录内容才能进入此页面
+            const content = localStorage.getItem('transcript_content');
+            if (!content) {
+                showAlert('暂无内容，请先返回首页完成转录', 'error');
+                setTimeout(() => window.location.href = '/', 1500);
+                return;
+            }
+
+            loadPlatforms();
+
+            const savedPlatform = localStorage.getItem('selected_platform');
+            if (savedPlatform) {
+                // 等待平台渲染完成后再选择
+                setTimeout(() => selectPlatform(savedPlatform), 100);
+            }
+        });
+    </script>
+</body>
+</html>

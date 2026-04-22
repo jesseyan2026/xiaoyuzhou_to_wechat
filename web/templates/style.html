@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>定制风格 - 播客转文章</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="logo" onclick="window.location.href='/'" style="cursor: pointer;">
+                🎙️ 播客转文章
+            </div>
+            <div class="nav-steps">
+                <div class="nav-step completed">
+                    <span class="step-number">✓</span>
+                    <span>输入链接</span>
+                </div>
+                <div class="nav-step completed">
+                    <span class="step-number">✓</span>
+                    <span>选择平台</span>
+                </div>
+                <div class="nav-step active">
+                    <span class="step-number">3</span>
+                    <span>定制风格</span>
+                </div>
+                <div class="nav-step">
+                    <span class="step-number">4</span>
+                    <span>预览保存</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容 -->
+    <div class="container">
+        <div class="card fade-in">
+            <div class="card-header">
+                <h1 class="card-title">🎨 定制文章风格</h1>
+                <p class="card-subtitle" id="platform-subtitle">选择适合的风格模板，并根据需要进行自定义调整</p>
+            </div>
+
+            <div id="alert-container"></div>
+
+            <!-- 模拟模式警告 -->
+            <div id="mock-mode-warning" style="display: none; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 20px;">⚠️</span>
+                    <div>
+                        <div style="font-weight: 600; color: #856404;">当前为模拟模式</div>
+                        <div style="font-size: 13px; color: #856404; margin-top: 4px;">
+                            系统将应用基础风格转换（叙述者替换、排版格式等）。配置 ANTHROPIC_API_KEY 环境变量可启用AI智能生成。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 默认风格推荐 -->
+            <div class="input-group">
+                <label class="input-label">选择默认风格</label>
+                <div class="style-grid" id="style-grid">
+                    <!-- 风格卡片将通过JS动态生成 -->
+                </div>
+            </div>
+
+            <!-- 自定义选项 -->
+            <div class="custom-options">
+                <h3 style="font-size: 18px; margin-bottom: 20px;">⚙️ 高级自定义</h3>
+
+                <!-- 叙述设置 -->
+                <div class="option-row">
+                    <div class="option-item">
+                        <label class="option-label">叙述者人称</label>
+                        <input type="text" id="narrator" class="input-field" placeholder="如：我的朋友">
+                    </div>
+                    <div class="option-item">
+                        <label class="option-label">文章标题（可选）</label>
+                        <input type="text" id="custom-title" class="input-field" placeholder="留空将自动生成">
+                    </div>
+                </div>
+
+                <!-- 排版设置（微信公众号） -->
+                <div id="wechat-options" style="display: none;">
+                    <div class="option-row">
+                        <div class="option-item">
+                            <label class="option-label">首行缩进</label>
+                            <label class="switch">
+                                <input type="checkbox" id="first-line-indent" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="option-item">
+                            <label class="option-label">行距倍数</label>
+                            <select id="line-height" class="input-field">
+                                <option value="1.6">1.6倍</option>
+                                <option value="1.8" selected>1.8倍</option>
+                                <option value="2.0">2.0倍</option>
+                                <option value="2.2">2.2倍</option>
+                            </select>
+                        </div>
+                        <div class="option-item">
+                            <label class="option-label">正文字号</label>
+                            <select id="font-size" class="input-field">
+                                <option value="14">14px</option>
+                                <option value="15">15px</option>
+                                <option value="16" selected>16px</option>
+                                <option value="17">17px</option>
+                                <option value="18">18px</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 小红书选项 -->
+                <div id="xiaohongshu-options" style="display: none;">
+                    <div class="option-row">
+                        <div class="option-item">
+                            <label class="option-label">使用 Emoji</label>
+                            <label class="switch">
+                                <input type="checkbox" id="use-emoji" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="option-item">
+                            <label class="option-label">要点分点</label>
+                            <label class="switch">
+                                <input type="checkbox" id="bullet-points" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="option-item">
+                            <label class="option-label">高亮重点</label>
+                            <label class="switch">
+                                <input type="checkbox" id="highlight-key" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="option-row">
+                        <div class="option-item">
+                            <label class="option-label">添加标签</label>
+                            <input type="text" id="tags" class="input-field" placeholder="如：#播客推荐 #搞钱女孩">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 内容范围 -->
+                <div class="option-row" style="margin-top: 20px;">
+                    <div class="option-item" style="grid-column: 1 / -1;">
+                        <label class="option-label">内容范围要求</label>
+                        <textarea id="content-scope" class="input-field" rows="3" placeholder="如：只转述前两个故事，跳过主持人开场"></textarea>
+                    </div>
+                </div>
+
+                <!-- 特殊要求 -->
+                <div class="option-row">
+                    <div class="option-item" style="grid-column: 1 / -1;">
+                        <label class="option-label">其他特殊要求</label>
+                        <textarea id="special-requirements" class="input-field" rows="2" placeholder="如：突出金句、增加小标题、减少口语化表达等"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="window.location.href='/platform'">
+                    ← 返回上一步
+                </button>
+                <button class="btn btn-primary" id="generate-btn" onclick="generateArticle()">
+                    <span id="btn-text">生成文章</span>
+                    <span id="btn-spinner" style="display: none;"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedPlatform = null;
+        let selectedStyle = null;
+        let platformConfigs = {};
+
+        // 加载配置
+        async function loadConfigs() {
+            // 强制检查：必须有转录内容才能进入此页面
+            const content = localStorage.getItem('transcript_content');
+            if (!content) {
+                showAlert('暂无内容，请先返回首页完成转录', 'error');
+                setTimeout(() => window.location.href = '/', 1500);
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/platforms');
+                const data = await response.json();
+
+                if (data.success) {
+                    platformConfigs = data.data;
+                }
+            } catch (error) {
+                console.error(error);
+            }
+
+            // 获取保存的平台选择
+            selectedPlatform = localStorage.getItem('selected_platform');
+
+            if (!selectedPlatform) {
+                showAlert('请先选择平台', 'error');
+                setTimeout(() => window.location.href = '/platform', 1500);
+                return;
+            }
+
+            // 更新页面
+            updatePlatformUI();
+            renderStyles();
+        }
+
+        function updatePlatformUI() {
+            const config = platformConfigs[selectedPlatform];
+            if (config) {
+                document.getElementById('platform-subtitle').textContent =
+                    `正在为 ${config.name} 定制文章风格`;
+            }
+
+            // 显示对应平台的选项
+            if (selectedPlatform === 'wechat') {
+                document.getElementById('wechat-options').style.display = 'block';
+                document.getElementById('xiaohongshu-options').style.display = 'none';
+            } else if (selectedPlatform === 'xiaohongshu') {
+                document.getElementById('wechat-options').style.display = 'none';
+                document.getElementById('xiaohongshu-options').style.display = 'block';
+            }
+        }
+
+        function renderStyles() {
+            const config = platformConfigs[selectedPlatform];
+            const grid = document.getElementById('style-grid');
+            grid.innerHTML = '';
+
+            if (!config || !config.default_styles) {
+                grid.innerHTML = '<p style="color: var(--text-secondary);">暂无预设风格</p>';
+                return;
+            }
+
+            Object.entries(config.default_styles).forEach(([key, style]) => {
+                const card = document.createElement('div');
+                card.className = 'style-card';
+                card.dataset.style = key;
+                card.onclick = () => selectStyle(key, style);
+
+                card.innerHTML = `
+                    <div class="style-name">${style.name}</div>
+                    <div class="style-desc">${style.description}</div>
+                `;
+
+                grid.appendChild(card);
+            });
+
+            // 恢复之前的选择
+            const savedStyle = localStorage.getItem('selected_style');
+            if (savedStyle) {
+                const styleConfig = config.default_styles[savedStyle];
+                if (styleConfig) {
+                    setTimeout(() => selectStyle(savedStyle, styleConfig), 100);
+                }
+            }
+        }
+
+        function selectStyle(styleKey, styleConfig) {
+            selectedStyle = styleKey;
+
+            // 更新UI
+            document.querySelectorAll('.style-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.querySelector(`[data-style="${styleKey}"]`).classList.add('selected');
+
+            // 应用风格参数到表单
+            applyStyleParams(styleConfig.params);
+
+            // 保存选择
+            localStorage.setItem('selected_style', styleKey);
+        }
+
+        function applyStyleParams(params) {
+            if (params.narrator) {
+                document.getElementById('narrator').value = params.narrator;
+            }
+            if (params.first_line_indent !== undefined) {
+                document.getElementById('first-line-indent').checked = params.first_line_indent;
+            }
+            if (params.line_height) {
+                document.getElementById('line-height').value = params.line_height;
+            }
+            if (params.font_size) {
+                document.getElementById('font-size').value = params.font_size;
+            }
+            if (params.use_emoji !== undefined) {
+                document.getElementById('use-emoji').checked = params.use_emoji;
+            }
+            if (params.bullet_points !== undefined) {
+                document.getElementById('bullet-points').checked = params.bullet_points;
+            }
+            if (params.highlight_key_points !== undefined) {
+                document.getElementById('highlight-key').checked = params.highlight_key_points;
+            }
+        }
+
+        function getStyleParams() {
+            const params = {
+                platform: selectedPlatform,
+                style_key: selectedStyle,
+                narrator: document.getElementById('narrator').value || '我的朋友',
+                custom_title: document.getElementById('custom-title').value,
+                content_scope: document.getElementById('content-scope').value,
+                special_requirements: document.getElementById('special-requirements').value
+            };
+
+            if (selectedPlatform === 'wechat') {
+                params.first_line_indent = document.getElementById('first-line-indent').checked;
+                params.line_height = parseFloat(document.getElementById('line-height').value);
+                params.font_size = parseInt(document.getElementById('font-size').value);
+            } else if (selectedPlatform === 'xiaohongshu') {
+                params.use_emoji = document.getElementById('use-emoji').checked;
+                params.bullet_points = document.getElementById('bullet-points').checked;
+                params.highlight_key_points = document.getElementById('highlight-key').checked;
+                params.tags = document.getElementById('tags').value;
+            }
+
+            return params;
+        }
+
+        async function generateArticle() {
+            const btn = document.getElementById('generate-btn');
+            const btnText = document.getElementById('btn-text');
+            const spinner = document.getElementById('btn-spinner');
+
+            // 检查转录内容 - 直接读取，不处理异步任务
+            const content = localStorage.getItem('transcript_content');
+
+            if (!content) {
+                showAlert('暂无内容，请先返回首页输入播客链接或粘贴转录内容', 'error');
+                setTimeout(() => window.location.href = '/', 2000);
+                return;
+            }
+
+            // 保存设置
+            const styleParams = getStyleParams();
+            localStorage.setItem('style_params', JSON.stringify(styleParams));
+
+            // 显示加载状态
+            btn.disabled = true;
+            btnText.textContent = '生成中...';
+            spinner.className = 'spinner';
+            spinner.style.display = 'inline-block';
+
+            try {
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        content: content,
+                        platform: selectedPlatform,
+                        style: styleParams
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    localStorage.setItem('generate_task_id', data.task_id);
+                    showAlert('文章生成任务已启动，正在跳转...', 'info');
+
+                    // 等待生成完成
+                    await waitForGeneration(data.task_id);
+                } else {
+                    showAlert(data.error || '生成失败', 'error');
+                }
+            } catch (error) {
+                showAlert('网络错误，请重试', 'error');
+                console.error(error);
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = '生成文章';
+                spinner.style.display = 'none';
+            }
+        }
+
+        async function waitForGeneration(taskId) {
+            const checkInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/task/${taskId}`);
+                    const data = await response.json();
+
+                    if (data.success) {
+                        if (data.data.status === 'completed') {
+                            clearInterval(checkInterval);
+                            // 保存生成的文章
+                            localStorage.setItem('generated_article', JSON.stringify(data.data.data));
+                            // 标记是否模拟模式
+                            if (data.data.data && data.data.data.is_mock) {
+                                localStorage.setItem('is_mock_mode', 'true');
+                            } else {
+                                localStorage.removeItem('is_mock_mode');
+                            }
+                            // 跳转到预览页
+                            window.location.href = '/preview';
+                        } else if (data.data.status === 'error') {
+                            clearInterval(checkInterval);
+                            showAlert(`生成失败：${data.data.message}`, 'error');
+                        }
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+            }, 2000);
+        }
+
+        function showAlert(message, type = 'info') {
+            const container = document.getElementById('alert-container');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            container.innerHTML = '';
+            container.appendChild(alertDiv);
+        }
+
+        // 页面加载
+        document.addEventListener('DOMContentLoaded', loadConfigs);
+
+        // 检查模拟模式
+document.addEventListener('DOMContentLoaded', function() {
+            // 检查是否已经有生成的文章（模拟模式）
+            const saved = localStorage.getItem('generated_article');
+            if (saved) {
+                const articleData = JSON.parse(saved);
+                if (articleData.is_mock || (articleData.content && articleData.content.includes('【模拟模式】'))) {
+                    document.getElementById('mock-mode-warning').style.display = 'block';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
