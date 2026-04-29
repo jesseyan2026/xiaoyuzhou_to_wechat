@@ -19,7 +19,7 @@ env/
 
 # Project local
 uploads/
-cache/
+/cache/
 transcriptions/
 test_output/
 output/*.html
